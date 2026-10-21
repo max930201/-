@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>挪威的咖啡 ERP - 客戶模組 v1.0 </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-dark: #2C221E;
+            --primary-accent: #8C6747;
+            --primary-light: #C8A279;
+            --bg-main: #F5F3EF;
+            --card-bg: #FFFFFF;
+            --text-main: #2B2B2B;
+            --text-muted: #717171;
+            --border-color: #E8E3DC;
+            --success: #4A7C59;
+            --warning: #D9822B;
+            --danger: #C0392B;
+            --info: #1565C0;
+            --sidebar-width: 250px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
+
+        /* Sidebar */
+        .sidebar { width: var(--sidebar-width); background-color: var(--primary-dark); color: #FFFFFF; display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+        .brand-container { padding: 24px 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .brand-logo { width: 36px; height: 36px; background: var(--primary-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--primary-dark); }
+        .brand-title { font-size: 18px; font-weight: 700; letter-spacing: 1px; color: #FFFFFF; }
+        .brand-subtitle { font-size: 11px; color: var(--primary-light); letter-spacing: 0.5px; }
+        .nav-menu { list-style: none; padding: 20px 12px; display: flex; flex-direction: column; gap: 6px; flex-grow: 1; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; color: #D1C7BD; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
+        .nav-item:hover { background: rgba(255,255,255,0.08); color: #FFFFFF; }
+        .nav-item.active { background: var(--primary-accent); color: #FFFFFF; box-shadow: 0 4px 12px rgba(140, 103, 71, 0.3); }
+        .nav-item i { font-size: 16px; width: 20px; text-align: center; }
+
+        /* Layout */
+        .main-wrapper { margin-left: var(--sidebar-width); flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
+        .topbar { background: #FFFFFF; height: 64px; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 90; }
+        .page-title { font-size: 20px; font-weight: 700; color: var(--primary-dark); }
+        .topbar-right { display: flex; align-items: center; gap: 20px; }
+
+        /* Role switcher */
+        .role-switcher-container { display: flex; align-items: center; background: var(--bg-main); padding: 4px; border-radius: 20px; border: 1px solid var(--border-color); }
+        .role-btn { border: none; background: transparent; padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; color: var(--text-muted); }
+        .role-btn.active { background: var(--primary-dark); color: #FFFFFF; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+        .user-profile { display: flex; align-items: center; gap: 10px; }
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--primary-dark); font-weight: 700; }
+
+        .content-area { padding: 28px 32px; display: flex; flex-direction: column; gap: 28px; }
+
+        /* KPI */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+        .kpi-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); position: relative; overflow: hidden; }
+        .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary-accent); }
+        .kpi-card.warning::before { background: var(--warning); }
+        .kpi-card.success::before { background: var(--success); }
+        .kpi-header { display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 13px; font-weight: 500; }
+        .kpi-value { font-size: 26px; font-weight: 700; color: var(--primary-dark); }
+        .kpi-subtext { font-size: 11px; color: var(--text-muted); line-height: 1.4; background: var(--bg-main); padding: 6px 10px; border-radius: 6px; }
+        .restricted-overlay { display: none; background: #FFF8F6; color: var(--danger); font-size: 13px; font-weight: 600; padding: 12px; border-radius: 6px; text-align: center; border: 1px dashed #F5C6CB; }
+
+        /* Section */
+        .section-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .section-title-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); gap: 12px; flex-wrap: wrap; }
+        .section-title { font-size: 16px; font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 8px; }
+
+        /* Table */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        .data-table th { background: #FAF8F5; color: var(--text-muted); font-weight: 600; padding: 12px 14px; border-bottom: 2px solid var(--border-color); white-space: nowrap; }
+        .data-table td { padding: 14px; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
+        .data-table tr:hover { background: #FAF9F6; }
+        .data-table tr.row-cancelled td { color: var(--text-muted); }
+        .data-table tr.row-cancelled td strong { text-decoration: line-through; }
+        .link-btn { color: var(--primary-accent); font-weight: 600; cursor: pointer; text-decoration: underline; background: none; border: none; font-size: 13px; }
+        .empty-row td { text-align: center; color: var(--text-muted); padding: 28px; }
+
+        /* Badges */
+        .badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; }
+        .badge-success { background: #E8F5E9; color: #2E7D32; }
+        .badge-warning { background: #FFF3E0; color: #E65100; }
+        .badge-info { background: #E3F2FD; color: #1565C0; }
+        .badge-danger { background: #FFEBEE; color: #C62828; }
+        .badge-secondary { background: #ECEFF1; color: #455A64; }
+
+        /* Pages */
+        .module-page { display: none; }
+        .module-page.active { display: block; }
+
+        /* Buttons */
+        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .btn-action { background: var(--primary-accent); color: #FFFFFF; border: none; padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .btn-action:hover { opacity: 0.9; }
+        .btn-ghost { background: transparent; color: var(--primary-accent); border: 1px solid var(--primary-accent); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .btn-secondary { background: #ECEFF1; color: #455A64; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+        .btn-danger-outline { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-danger-outline:hover { background: var(--danger); color: #fff; }
+
+        /* Test grid & placeholder (沿用) */
+        .test-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 12px; }
+        .test-card { background: #FAF9F6; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+        .test-card-header { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 13px; color: var(--primary-dark); }
+        .test-card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+        .reserved-placeholder { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .reserved-placeholder i { font-size: 50px; color: var(--primary-light); margin-bottom: 16px; }
+
+        /* Customer module */
+        .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+        .filter-bar input, .filter-bar select { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; background: #FFF; }
+        .list-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+        .msg-box { padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; display: none; line-height: 1.5; }
+        .msg-box.error { display: block; background: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; }
+        .msg-box.success { display: block; background: #E8F5E9; color: #2E7D32; border: 1px solid #C8E6C9; }
+        .msg-box.info { display: block; background: #E3F2FD; color: #0D47A1; border: 1px solid #BBDEFB; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px 28px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { font-size: 13px; font-weight: 600; color: var(--primary-dark); }
+        .form-group label .req { color: var(--danger); }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; background: #FFF; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-group input:disabled, .form-group select:disabled { background: #F3F1ED; color: var(--text-muted); cursor: not-allowed; }
+        .form-group input.invalid, .form-group select.invalid, .form-group textarea.invalid { border-color: var(--danger); background: #FFF8F6; }
+        .field-hint { font-size: 11px; color: var(--text-muted); }
+        .field-error { font-size: 12px; color: var(--danger); display: none; }
+        .field-error.show { display: block; }
+
+        .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 24px; }
+        .detail-item { background: #FAF9F6; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px; }
+        .detail-item label { font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+        .detail-item div { font-size: 14px; font-weight: 600; color: var(--primary-dark); word-break: break-all; }
+        .detail-title { font-size: 20px; font-weight: 700; color: var(--primary-dark); }
+        .detail-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+        .restricted-tag { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-left: 6px; }
+    </style>
+</head>
+<body>
+
+    <!-- 側邊導覽列 -->
+    <aside class="sidebar">
+        <div class="brand-container">
+            <div class="brand-logo"><i class="fa-solid fa-mug-hot"></i></div>
+            <div>
+                <div class="brand-title">NORWAY COFFEE</div>
+                <div class="brand-subtitle">挪威的咖啡 ERP v1.0</div>
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item active" onclick="switchModule('dashboard', this)">
+                <i class="fa-solid fa-chart-line"></i> 首頁儀表板
+            </li>
+            <li class="nav-item" onclick="openCustomerList(this)">
+                <i class="fa-solid fa-users"></i> <span id="nav-customers-label">客戶管理 (5)</span>
+            </li>
+            <li class="nav-item" onclick="switchModule('products', this)">
+                <i class="fa-solid fa-box-open"></i> 商品目錄
+            </li>
+            <li class="nav-item" onclick="switchModule('orders', this)">
+                <i class="fa-solid fa-file-invoice-dollar"></i> <span id="nav-orders-label">銷售訂單 (5)</span>
+            </li>
+            <li class="nav-item" onclick="switchModule('inventory', this)">
+                <i class="fa-solid fa-warehouse"></i> 庫存與保留
+            </li>
+            <li class="nav-item" onclick="switchModule('shipping', this)">
+                <i class="fa-solid fa-truck-fast"></i> 出貨配送 <small style="font-size: 9px; opacity: 0.7;">(第11週)</small>
+            </li>
+            <li class="nav-item" onclick="switchModule('tests', this)">
+                <i class="fa-solid fa-list-check"></i> 八項驗收測試
+            </li>
+            <li class="nav-item" onclick="switchModule('permissions', this)" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+                <i class="fa-solid fa-user-shield"></i> 角色權限矩陣
+            </li>
+        </ul>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="topbar">
+            <div><span class="page-title" id="page-title-text">首頁儀表板</span></div>
+            <div class="topbar-right">
+                <div class="role-switcher-container">
+                    <span style="font-size: 11px; margin: 0 8px; color: var(--text-muted); font-weight: 600;">教學用權限模擬：</span>
+                    <button class="role-btn active" id="role-admin-btn" onclick="setRole('Admin')">Admin (經理)</button>
+                    <button class="role-btn" id="role-staff-btn" onclick="setRole('Staff')">Staff (員工)</button>
+                </div>
+                <div class="user-profile">
+                    <div class="user-avatar" id="user-avatar-text">A</div>
+                    <div>
+                        <div style="font-size: 13px; font-weight: 700;" id="user-name-text">系統管理者</div>
+                        <div style="font-size: 11px; color: var(--text-muted);" id="user-role-label">角色：Admin</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-area">
+
+            <!-- 首頁儀表板 -->
+            <div id="module-dashboard" class="module-page active">
+                <div style="margin-bottom: 16px; background: #E3F2FD; border: 1px solid #90CAF9; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #0D47A1;">
+                    <i class="fa-solid fa-calendar-days"></i> <strong>統計基準日：</strong> 2026-10-13
+                    <span style="margin-left: 12px;">|</span>
+                    <span style="margin-left: 12px;"><i class="fa-solid fa-circle-info"></i> 指標由資料動態計算；新增客戶後「客戶總數」會即時更新。</span>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card success">
+                        <div class="kpi-header"><span>客戶總數 (Total Customers)</span><i class="fa-solid fa-users"></i></div>
+                        <div class="kpi-value" id="kpi-customers">5 位</div>
+                        <div class="kpi-subtext"><strong>計算規則：</strong>Customer 主檔不同 Customer_ID 筆數，含停用客戶。</div>
+                    </div>
+                    <div class="kpi-card warning">
+                        <div class="kpi-header"><span>今日有效訂單 (Orders Today)</span><i class="fa-solid fa-file-invoice"></i></div>
+                        <div class="kpi-value" id="kpi-orders-count">3 筆</div>
+                        <div class="kpi-subtext"><strong>計算規則：</strong>日期 2026-10-13 且非取消。</div>
+                    </div>
+                    <div class="kpi-card success">
+                        <div class="kpi-header"><span>今日訂單總額 (Sales Today)</span><i class="fa-solid fa-dollar-sign"></i></div>
+                        <div class="kpi-value financial-data" id="kpi-orders-amount">NT$ 9,000</div>
+                        <div class="restricted-overlay">🔒 敏感財務受限</div>
+                        <div class="kpi-subtext"><strong>計算規則：</strong>SUM(Total) 當日有效訂單。</div>
+                    </div>
+                    <div class="kpi-card warning">
+                        <div class="kpi-header"><span>待出貨訂單數 (Pending Shipping)</span><i class="fa-solid fa-box"></i></div>
+                        <div class="kpi-value" id="kpi-pending-shipping">3 筆</div>
+                        <div class="kpi-subtext"><strong>計算規則：</strong>狀態為「已確認」或「備貨中」。</div>
+                    </div>
+                </div>
+
+                <div class="section-card" style="margin-top: 24px;">
+                    <div class="section-title-bar">
+                        <span class="section-title"><i class="fa-solid fa-bolt"></i> 驗收狀態摘要</span>
+                        <button class="btn-action" onclick="switchModule('tests', document.querySelectorAll('.nav-item')[6])">查看八項驗收測試面板</button>
+                    </div>
+                    <p style="font-size: 13px; line-height: 1.6; color: var(--text-muted);">
+                        目前已載入 <strong id="summary-customers">5 位客戶</strong>、5 張訂單。客戶的新增、修改、停用與訂單連結可直接在「客戶管理」中操作。
+                    </p>
+                </div>
+            </div>
+
+            <!-- 客戶列表 -->
+            <div id="module-customers" class="module-page">
+                <div class="section-card">
+                    <div class="section-title-bar">
+                        <span class="section-title"><i class="fa-solid fa-address-book"></i> 客戶列表（Customer 主檔）</span>
+                        <div class="btn-row">
+                            <span class="badge badge-info" id="customer-total-badge">總計 5 筆</span>
+                            <button class="btn-action" onclick="openCustomerForm(null)"><i class="fa-solid fa-plus"></i> 新增客戶</button>
+                        </div>
+                    </div>
+
+                    <div id="list-msg" class="msg-box"></div>
+
+                    <div class="filter-bar">
+                        <input type="text" id="f-q" placeholder="搜尋客戶編號或名稱（可輸入部分字串）" oninput="renderCustomerList()" style="flex: 1; min-width: 240px;">
+                        <select id="f-type" onchange="renderCustomerList()">
+                            <option value="">全部分類</option>
+                            <option value="零售">零售</option>
+                            <option value="批發">批發</option>
+                            <option value="企業">企業</option>
+                        </select>
+                        <select id="f-status" onchange="renderCustomerList()">
+                            <option value="">全部狀態</option>
+                            <option value="active">啟用</option>
+                            <option value="inactive">停用</option>
+                        </select>
+                        <button class="btn-secondary" onclick="clearCustomerFilter()">清除條件</button>
+                    </div>
+                    <div class="list-meta" id="list-count"></div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>客戶編號</th>
+                                <th>客戶名稱</th>
+                                <th>分類</th>
+                                <th>付款條件</th>
+                                <th>信用額度</th>
+                                <th>啟用狀態</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customers-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 客戶新增／編輯表單 -->
+            <div id="module-customer-form" class="module-page">
+                <div class="section-card">
+                    <div class="section-title-bar">
+                        <span class="section-title" id="cf-title">新增客戶</span>
+                        <span class="badge badge-info">標示 * 為必填</span>
+                    </div>
+
+                    <div id="cf-msg" class="msg-box"></div>
+                    <div id="cf-staff-hint" class="msg-box info" style="display: none;">
+                        <i class="fa-solid fa-lock"></i> Staff 身分：付款條件、信用額度與啟用狀態為唯讀；新增時系統自動套用「現結／0／啟用」。
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>客戶編號 Customer_ID</label>
+                            <input type="text" id="cf-id" disabled>
+                            <span class="field-hint">由系統依既有最大號碼加1產生，建立後不可修改。</span>
+                        </div>
+                        <div class="form-group">
+                            <label>客戶名稱 <span class="req">*</span></label>
+                            <input type="text" id="cf-name" maxlength="100" placeholder="去除前後空白後不可為空">
+                            <span class="field-error" id="err-name"></span>
+                        </div>
+                        <div class="form-group">
+                            <label>客戶分類 <span class="req">*</span></label>
+                            <select id="cf-type">
+                                <option value="零售">零售</option>
+                                <option value="批發">批發</option>
+                                <option value="企業">企業</option>
+                            </select>
+                            <span class="field-error" id="err-type"></span>
+                        </div>
+                        <div class="form-group">
+                            <label>電話</label>
+                            <input type="text" id="cf-phone" maxlength="30" placeholder="例：0912-345-678（保留前導0）">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="text" id="cf-email" maxlength="100" placeholder="選填；有填才檢查格式">
+                            <span class="field-error" id="err-email"></span>
+                        </div>
+                        <div class="form-group">
+                            <label>啟用狀態</label>
+                            <select id="cf-active">
+                                <option value="true">啟用</option>
+                                <option value="false">停用</option>
+                            </select>
+                            <span class="field-hint">僅 Admin 可停用或重新啟用。</span>
+                        </div>
+                        <div class="form-group">
+                            <label>付款條件 <span class="req">*</span></label>
+                            <select id="cf-terms">
+                                <option value="現結">現結</option>
+                                <option value="月結30天">月結30天</option>
+                            </select>
+                            <span class="field-error" id="err-terms"></span>
+                        </div>
+                        <div class="form-group">
+                            <label>信用額度（新臺幣元）<span class="req">*</span></label>
+                            <input type="text" id="cf-credit" inputmode="numeric" maxlength="12" placeholder="非負整數">
+                            <span class="field-hint">現結須為 0；月結30天可填非負整數（0 表示未核給額度）。本週不計算可用額度。</span>
+                            <span class="field-error" id="err-credit"></span>
+                        </div>
+                        <div class="form-group full">
+                            <label>備註（最多200字）</label>
+                            <textarea id="cf-notes" maxlength="400" placeholder="選填；請勿記錄敏感資料"></textarea>
+                            <span class="field-error" id="err-notes"></span>
+                        </div>
+                    </div>
+
+                    <div class="btn-row" style="margin-top: 24px;">
+                        <button class="btn-action" onclick="saveCustomer()"><i class="fa-solid fa-floppy-disk"></i> 儲存</button>
+                        <button class="btn-secondary" onclick="cancelCustomerForm()">取消（不儲存變更）</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 客戶詳細頁 -->
+            <div id="module-customer-detail" class="module-page">
+                <div class="section-card">
+                    <div class="section-title-bar">
+                        <div>
+                            <div class="detail-title" id="cd-name">—</div>
+                            <div class="detail-sub" id="cd-sub">—</div>
+                        </div>
+                        <div class="btn-row" id="cd-actions"></div>
+                    </div>
+                    <div class="detail-grid" id="cd-master"></div>
+                </div>
+
+                <div class="section-card" style="margin-top: 24px;">
+                    <div class="section-title-bar">
+                        <span class="section-title"><i class="fa-solid fa-file-invoice-dollar"></i> 該客戶訂單（依 Customer_ID 查詢）</span>
+                        <span class="badge badge-info" id="cd-order-count">0 筆</span>
+                    </div>
+                    <div id="cd-orders"></div>
+                </div>
+            </div>
+
+            <!-- 新增銷售訂單 -->
+            <div id="module-order-form" class="module-page">
+                <div class="section-card">
+                    <div class="section-title-bar">
+                        <span class="section-title"><i class="fa-solid fa-cart-plus"></i> 新增銷售訂單</span>
+                        <span class="badge badge-info">標示 * 為必填</span>
+                    </div>
+
+                    <div id="of-msg" class="msg-box"></div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>客戶 <span class="req">*</span></label>
+                            <select id="of-customer"></select>
+                            <span class="field-hint">僅列出啟用中的客戶；停用客戶不可建立新交易。</span>
+                            <span class="field-error" id="of-err-customer"></span>
+                        </div>
+                        <div class="form-group">
+                            <label>訂單日期 <span class="req">*</span></label>
+                            <input type="date" id="of-date">
+                            <span class="field-error" id="of-err-date"></span>
+                        </div>
+                        <div class="form-group">
+                            <label>訂單狀態</label>
+                            <select id="of-status">
+                                <option value="已確認">已確認</option>
+                                <option value="備貨中">備貨中</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 24px 0 10px; font-size: 14px; color: var(--primary-dark);">訂單明細</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>商品 <span class="req">*</span></th><th>牌價</th><th>數量 <span class="req">*</span></th><th>小計</th><th>操作</th></tr>
+                        </thead>
+                        <tbody id="of-lines"></tbody>
+                    </table>
+                    <div class="btn-row" style="margin-top: 12px;">
+                        <button class="btn-secondary" onclick="addOrderLine()"><i class="fa-solid fa-plus"></i> 新增明細列</button>
+                    </div>
+                    <div class="field-error" id="of-err-lines" style="margin-top: 8px;"></div>
+
+                    <div style="margin-top: 20px; text-align: right; font-size: 15px; font-weight: 700; color: var(--primary-dark);">
+                        訂單總額：<span id="of-total">NT$ 0</span>
+                    </div>
+
+                    <div class="btn-row" style="margin-top: 24px;">
+                        <button class="btn-action" onclick="saveOrder()"><i class="fa-solid fa-floppy-disk"></i> 建立訂單</button>
+                        <button class="btn-secondary" onclick="openOrdersPage()">取消</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 商品目錄 -->
+            <div id="module-products" class="module-page">
+                <div class="section-card">
+                    <div class="section-title-bar">
+                        <span class="section-title"><i class="fa-solid fa-boxes-stacked"></i> Product 商品主檔樣本頁</span>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Product_ID</th><th>商品名稱</th><th>分類</th><th>規格</th><th>單位</th><th>牌價</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>P001</td><td>耶加雪菲 經典特選豆</td><td>咖啡豆</td><td>227g</td><td>包</td><td>NT$ 480</td></tr>
+                            <tr><td>P002</td><td>藝妓 珍稀古樹莊園豆</td><td>咖啡豆</td><td>227g</td><td>包</td><td>NT$ 1,280</td></tr>
+                            <tr><td>P004</td><td>藍山風味 濾掛式咖啡</td><td>濾掛</td><td>10包</td><td>盒</td><td>NT$ 380</td></tr>
+                            <tr><td>P005</td><td>拾光十週年 紀念冷萃濃縮液</td><td>冷萃</td><td>500ml</td><td>瓶</td><td>NT$ 580</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 銷售訂單 -->
+            <div id="module-orders" class="module-page">
+                <div class="section-card">
+                    <div class="section-title-bar">
+                        <span class="section-title"><i class="fa-solid fa-file-invoice-dollar"></i> 銷售訂單主檔與明細</span>
+                        <div class="btn-row"><span class="badge badge-success">基準日：2026-10-13</span><button class="btn-action" onclick="openOrderForm()"><i class="fa-solid fa-plus"></i> 新增訂單</button></div>
+                    </div>
+                    <div id="orders-msg" class="msg-box"></div>
+                    <p style="font-size: 13px; margin-bottom: 16px; color: var(--text-muted);">
+                        提示：點擊 <strong>SO20261013-02</strong> 的按鈕可切換其狀態（已確認 ⇄ 已取消），首頁指標會同步變動。
+                    </p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>訂單編號</th>
+                                <th>客戶（Customer_ID）</th>
+                                <th>訂單日期</th>
+                                <th>總金額</th>
+                                <th>訂單狀態</th>
+                                <th>明細摘要</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 庫存 -->
+            <div id="module-inventory" class="module-page">
+                <div class="section-card">
+                    <div class="section-title-bar">
+                        <span class="section-title"><i class="fa-solid fa-warehouse"></i> 庫存與保留檢查</span>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Product_ID</th><th>商品名稱</th><th>實體總庫存</th><th>保留量</th><th>可用量</th><th>狀態</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>P001</td><td>耶加雪菲 經典特選豆</td><td>150</td><td>2</td><td>148</td><td><span class="badge badge-success">充足</span></td></tr>
+                            <tr><td>P004</td><td>藍山風味 濾掛式咖啡</td><td>60</td><td>10</td><td>50</td><td><span class="badge badge-success">充足</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 出貨（預留） -->
+            <div id="module-shipping" class="module-page">
+                <div class="section-card">
+                    <div class="reserved-placeholder">
+                        <i class="fa-solid fa-truck-ramp-box"></i>
+                        <h2>出貨與配送管理模組</h2>
+                        <p style="margin-top: 8px; font-weight: 700; color: var(--primary-accent);">預計第11週完成建置 (Planned for Week 11)</p>
+                        <div style="margin-top: 20px; text-align: left; max-width: 450px; margin-left: auto; margin-right: auto; background: var(--bg-main); padding: 16px; border-radius: 8px; font-size: 13px;">
+                            <strong>第 11 週預計上線功能：</strong>
+                            <ul style="margin-left: 20px; margin-top: 8px; line-height: 1.6;">
+                                <li>揀貨單自動產生與包裝列印</li>
+                                <li>物流單號自動對接</li>
+                                <li>出貨時扣減實際庫存與配送狀態追蹤</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 八項驗收測試 -->
+            <div id="module-tests" class="module-page">
+                <div class="section-card">
+                    <div class="section-title-bar">
+                        <span class="section-title"><i class="fa-solid fa-list-check"></i> 挪威的咖啡 ERP - 八項系統驗收測試面板</span>
+                    </div>
+                    <div class="test-grid">
+                        <div class="test-card">
+                            <div class="test-card-header"><span>測試 1：Admin 角色全權限</span><span class="badge badge-success">可驗證</span></div>
+                            <div class="test-card-desc">切換至 Admin，首頁完整顯示營業額，客戶頁可編輯、停用。</div>
+                            <button class="btn-action" style="margin-top: 6px;" onclick="setRole('Admin'); switchModule('dashboard', document.querySelectorAll('.nav-item')[0]);">立即測試</button>
+                        </div>
+                        <div class="test-card">
+                            <div class="test-card-header"><span>測試 2：Staff 身分敏感隱蔽</span><span class="badge badge-success">可驗證</span></div>
+                            <div class="test-card-desc">切換至 Staff，確認敏感財務 KPI 被遮蔽。</div>
+                            <button class="btn-action" style="margin-top: 6px;" onclick="setRole('Staff'); switchModule('dashboard', document.querySelectorAll('.nav-item')[0]);">立即測試</button>
+                        </div>
+                        <div class="test-card">
+                            <div class="test-card-header"><span>測試 3：基準日 2026-10-13 計算</span><span class="badge badge-success">可驗證</span></div>
+                            <div class="test-card-desc">今日有效訂單 3 筆、金額 NT$ 9,000。</div>
+                            <button class="btn-action" style="margin-top: 6px;" onclick="switchModule('dashboard', document.querySelectorAll('.nav-item')[0]);">查看首頁</button>
+                        </div>
+                        <div class="test-card">
+                            <div class="test-card-header"><span>測試 4：SO20261013-02 狀態變更連動</span><span class="badge badge-success">可驗證</span></div>
+                            <div class="test-card-desc">改為「已取消」後首頁即時更新。</div>
+                            <button class="btn-action" style="margin-top: 6px;" onclick="switchModule('orders', document.querySelectorAll('.nav-item')[3]);">前往訂單測試</button>
+                        </div>
+                        <div class="test-card">
+                            <div class="test-card-header"><span>測試 5：5位客戶主檔驗證</span><span class="badge badge-success">可驗證</span></div>
+                            <div class="test-card-desc">客戶管理載入 5 位客戶，含零售、批發、企業與付款條件。</div>
+                            <button class="btn-action" style="margin-top: 6px;" onclick="openCustomerList(document.querySelectorAll('.nav-item')[1]);">查看客戶頁</button>
+                        </div>
+                        <div class="test-card">
+                            <div class="test-card-header"><span>測試 6：銷售訂單明細關聯</span><span class="badge badge-success">可驗證</span></div>
+                            <div class="test-card-desc">訂單以 Customer_ID 關聯客戶。</div>
+                            <button class="btn-action" style="margin-top: 6px;" onclick="switchModule('orders', document.querySelectorAll('.nav-item')[3]);">查看訂單頁</button>
+                        </div>
+                        <div class="test-card">
+                            <div class="test-card-header"><span>測試 7：出貨頁「第11週完成」</span><span class="badge badge-success">可驗證</span></div>
+                            <div class="test-card-desc">顯示預留頁面與預計第11週完成提示。</div>
+                            <button class="btn-action" style="margin-top: 6px;" onclick="switchModule('shipping', document.querySelectorAll('.nav-item')[5]);">查看出貨頁</button>
+                        </div>
+                        <div class="test-card">
+                            <div class="test-card-header"><span>測試 8：角色切換連動更新</span><span class="badge badge-success">可驗證</span></div>
+                            <div class="test-card-desc">切換身分後，客戶頁與表單的可操作欄位即時更新。</div>
+                            <button class="btn-action" style="margin-top: 6px;" onclick="setRole('Admin'); switchModule('permissions', document.querySelectorAll('.nav-item')[7]);">查看權限矩陣</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 角色權限矩陣 -->
+            <div id="module-permissions" class="module-page">
+                <div class="section-card">
+                    <div class="section-title-bar">
+                        <span class="section-title"><i class="fa-solid fa-shield-halved"></i> Admin vs Staff 角色權限矩陣</span>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>功能模組 / 操作</th><th>Admin (經理)</th><th>Staff (員工)</th><th>說明</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>首頁敏感財務 KPI</td>
+                                <td><i class="fa-solid fa-circle-check" style="color: var(--success);"></i> 完整檢視</td>
+                                <td><i class="fa-solid fa-circle-xmark" style="color: var(--danger);"></i> 隱蔽受限</td>
+                                <td>避免一般員工檢視總營業額。</td>
+                            </tr>
+                            <tr>
+                                <td>客戶列表、搜尋、詳細頁、既有訂單</td>
+                                <td><i class="fa-solid fa-circle-check" style="color: var(--success);"></i> 允許</td>
+                                <td><i class="fa-solid fa-circle-check" style="color: var(--success);"></i> 允許</td>
+                                <td>兩種身分皆可查詢客戶與其訂單。</td>
+                            </tr>
+                            <tr>
+                                <td>新增客戶基本資料</td>
+                                <td><i class="fa-solid fa-circle-check" style="color: var(--success);"></i> 允許</td>
+                                <td><i class="fa-solid fa-circle-check" style="color: var(--success);"></i> 允許</td>
+                                <td>Staff 新增時固定為現結／額度0／啟用。</td>
+                            </tr>
+                            <tr>
+                                <td>修改名稱、分類及聯絡資料</td>
+                                <td><i class="fa-solid fa-circle-check" style="color: var(--success);"></i> 允許</td>
+                                <td><i class="fa-solid fa-circle-check" style="color: var(--success);"></i> 允許</td>
+                                <td>Customer_ID 不可修改。</td>
+                            </tr>
+                            <tr>
+                                <td>查看／修改付款條件與信用額度</td>
+                                <td><i class="fa-solid fa-circle-check" style="color: var(--success);"></i> 可修改</td>
+                                <td><i class="fa-solid fa-eye" style="color: var(--info);"></i> 唯讀</td>
+                                <td>Staff 嘗試修改時，系統拒絕且保留原值。</td>
+                            </tr>
+                            <tr>
+                                <td>停用與重新啟用客戶</td>
+                                <td><i class="fa-solid fa-circle-check" style="color: var(--success);"></i> 允許</td>
+                                <td><i class="fa-solid fa-circle-xmark" style="color: var(--danger);"></i> 拒絕</td>
+                                <td>停用不刪除客戶，也不移除歷史訂單。</td>
+                            </tr>
+                            <tr>
+                                <td>修改 Customer_ID 或實體刪除客戶</td>
+                                <td><i class="fa-solid fa-circle-xmark" style="color: var(--danger);"></i> 拒絕</td>
+                                <td><i class="fa-solid fa-circle-xmark" style="color: var(--danger);"></i> 拒絕</td>
+                                <td>本週不提供此功能。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ===================== 基礎資料 =====================
+        const BASE_DATE = "2026-10-13";
+        const CUSTOMER_TYPES = ['零售', '批發', '企業'];
+        const PAYMENT_TERMS = ['現結', '月結30天'];
+
+        let currentRole = 'Admin';
+        let editingId = null;     // null = 新增
+        let viewingId = null;     // 詳細頁目前檢視的客戶
+
+        // 主檔：欄位依講義「客戶資料字典」
+        let customers = [
+            { id: 'C001', name: '王小明', type: '零售', phone: '0912-345-678', email: '', terms: '現結', credit: 0, active: true, notes: '', updated: BASE_DATE },
+            { id: 'C002', name: '陳大為', type: '零售', phone: '0988-112-233', email: '', terms: '現結', credit: 0, active: true, notes: '原系統分類：B2C_VIP', updated: BASE_DATE },
+            { id: 'C003', name: '北歐辦公室股份有限公司', type: '企業', phone: '02-2345-6789', email: '', terms: '月結30天', credit: 200000, active: true, notes: '統編 83123456', updated: BASE_DATE },
+            { id: 'C004', name: '林美玲', type: '零售', phone: '0933-556-789', email: '', terms: '現結', credit: 0, active: true, notes: '', updated: BASE_DATE },
+            { id: 'C005', name: '台北精品咖啡館', type: '批發', phone: '02-8765-4321', email: '', terms: '月結30天', credit: 300000, active: true, notes: '統編 24567890', updated: BASE_DATE }
+        ];
+
+        // 交易資料：以 customerId 關聯主檔（不以姓名連結）
+        let ordersData = [
+            { id: "SO20261013-01", customerId: "C001", date: "2026-10-13", amount: 1340, status: "已確認", details: "P001×2, P004×1" },
+            { id: "SO20261013-02", customerId: "C002", date: "2026-10-13", amount: 1800, status: "已確認", details: "P005×2, P004×2" },
+            { id: "SO20261013-03", customerId: "C004", date: "2026-10-13", amount: 5860, status: "備貨中", details: "P002×4, P001×2" },
+            { id: "SO20261012-04", customerId: "C003", date: "2026-10-12", amount: 50000, status: "已確認", details: "B2B 批量禮盒" },
+            { id: "SO20261011-05", customerId: "C005", date: "2026-10-11", amount: 32000, status: "已出貨", details: "B2B 豆品批發" }
+        ];
+
+        // ===================== 共用工具 =====================
+        function esc(s) {
+            return String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        }
+        function fmtMoney(n) { return 'NT$ ' + Number(n).toLocaleString(); }
+        function customerNameOf(id) {
+            const c = customers.find(x => x.id === id);
+            return c ? c.name : '(找不到客戶)';
+        }
+        function statusBadgeCustomer(active) {
+            return active ? '<span class="badge badge-success">啟用</span>' : '<span class="badge badge-secondary">停用</span>';
+        }
+        function orderStatusBadge(s) {
+            if (s === '已確認') return '<span class="badge badge-info">已確認</span>';
+            if (s === '備貨中') return '<span class="badge badge-warning">備貨中</span>';
+            if (s === '已出貨') return '<span class="badge badge-success">已出貨</span>';
+            if (s === '已取消') return '<span class="badge badge-danger">已取消</span>';
+            return '<span class="badge badge-secondary">' + esc(s) + '</span>';
+        }
+        function showMsg(id, type, text) {
+            const el = document.getElementById(id);
+            el.className = 'msg-box' + (type ? ' ' + type : '');
+            el.innerText = text || '';
+        }
+        function navCustomers() { return document.querySelectorAll('.nav-item')[1]; }
+
+        // Customer_ID：既有最大號碼 + 1，並再次檢查唯一
+        function nextCustomerId() {
+            const max = customers.reduce((m, c) => {
+                const n = parseInt(String(c.id).replace(/\D/g, ''), 10);
+                return isNaN(n) ? m : Math.max(m, n);
+            }, 0);
+            let n = max + 1;
+            let id = 'C' + String(n).padStart(3, '0');
+            while (customers.some(c => c.id === id)) {
+                n++;
+                id = 'C' + String(n).padStart(3, '0');
+            }
+            return id;
+        }
+
+        // ===================== 客戶列表 =====================
+        function openCustomerList(el) {
+            switchModule('customers', el || navCustomers());
+            renderCustomerList();
+        }
+
+        function clearCustomerFilter() {
+            document.getElementById('f-q').value = '';
+            document.getElementById('f-type').value = '';
+            document.getElementById('f-status').value = '';
+            renderCustomerList();
+        }
+
+        function renderCustomerList() {
+            const q = document.getElementById('f-q').value.trim().toLowerCase();
+            const type = document.getElementById('f-type').value;
+            const status = document.getElementById('f-status').value;
+
+            // 搜尋、分類、狀態三者採交集；停用資料仍可在列表找到
+            const rows = customers
+                .filter(c =>
+                    (!q || c.id.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)) &&
+                    (!type || c.type === type) &&
+                    (!status || (status === 'active' ? c.active : !c.active))
+                )
+                .sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true }));
+
+            const tbody = document.getElementById('customers-table-body');
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr class="empty-row"><td colspan="7">沒有符合條件的客戶</td></tr>';
+            } else {
+                tbody.innerHTML = rows.map(c => `
+                    <tr class="${c.active ? '' : 'row-cancelled'}">
+                        <td><strong>${esc(c.id)}</strong></td>
+                        <td>${esc(c.name)}</td>
+                        <td>${esc(c.type)}</td>
+                        <td>${esc(c.terms)}</td>
+                        <td>${fmtMoney(c.credit)}</td>
+                        <td>${statusBadgeCustomer(c.active)}</td>
+                        <td>
+                            <div class="btn-row">
+                                <button class="btn-ghost" onclick="openCustomerDetail('${c.id}')">查看</button>
+                                <button class="btn-action" onclick="openCustomerForm('${c.id}')">編輯</button>
+                            </div>
+                        </td>
+                    </tr>`).join('');
+            }
+
+            document.getElementById('list-count').innerText = `顯示 ${rows.length} / ${customers.length} 筆`;
+            document.getElementById('customer-total-badge').innerText = `總計 ${customers.length} 筆`;
+        }
+
+        // ===================== 新增／編輯表單 =====================
+        const FORM_FIELDS = ['cf-name', 'cf-type', 'cf-phone', 'cf-email', 'cf-terms', 'cf-credit', 'cf-active', 'cf-notes'];
+        const ERROR_IDS = { name: 'err-name', type: 'err-type', email: 'err-email', terms: 'err-terms', credit: 'err-credit', notes: 'err-notes' };
+        const INPUT_IDS = { name: 'cf-name', type: 'cf-type', email: 'cf-email', terms: 'cf-terms', credit: 'cf-credit', notes: 'cf-notes' };
+
+        function clearFormErrors() {
+            Object.keys(ERROR_IDS).forEach(k => {
+                const e = document.getElementById(ERROR_IDS[k]);
+                e.innerText = ''; e.classList.remove('show');
+                document.getElementById(INPUT_IDS[k]).classList.remove('invalid');
+            });
+        }
+
+        function showFormErrors(errs) {
+            Object.keys(errs).forEach(k => {
+                const e = document.getElementById(ERROR_IDS[k]);
+                e.innerText = errs[k]; e.classList.add('show');
+                document.getElementById(INPUT_IDS[k]).classList.add('invalid');
+            });
+        }
+
+        // Staff 的受限欄位為唯讀（畫面層）
+        function applyFormPermissions() {
+            const staff = currentRole === 'Staff';
+            ['cf-terms', 'cf-credit', 'cf-active'].forEach(id => {
+                document.getElementById(id).disabled = staff;
+            });
+            document.getElementById('cf-staff-hint').style.display = staff ? 'block' : 'none';
+        }
+
+        function openCustomerForm(id) {
+            editingId = id || null;
+            const isNew = !editingId;
+            const c = isNew ? null : customers.find(x => x.id === editingId);
+            if (!isNew && !c) { alert('找不到此客戶。'); return; }
+
+            document.getElementById('cf-title').innerText = isNew ? '新增客戶' : `編輯客戶 ${c.id}`;
+            document.getElementById('cf-id').value = isNew ? nextCustomerId() + '（儲存時由系統產生）' : c.id;
+            document.getElementById('cf-name').value = isNew ? '' : c.name;
+            document.getElementById('cf-type').value = isNew ? '零售' : c.type;
+            document.getElementById('cf-phone').value = isNew ? '' : c.phone;
+            document.getElementById('cf-email').value = isNew ? '' : c.email;
+            document.getElementById('cf-terms').value = isNew ? '現結' : c.terms;
+            document.getElementById('cf-credit').value = isNew ? '0' : String(c.credit);
+            document.getElementById('cf-active').value = (isNew || c.active) ? 'true' : 'false';
+            document.getElementById('cf-notes').value = isNew ? '' : c.notes;
+
+            clearFormErrors();
+            showMsg('cf-msg', '', '');
+            applyFormPermissions();
+            switchModule('customer-form', navCustomers());
+        }
+
+        function readForm() {
+            return {
+                name: document.getElementById('cf-name').value.trim(),
+                type: document.getElementById('cf-type').value,
+                phone: document.getElementById('cf-phone').value.trim(),
+                email: document.getElementById('cf-email').value.trim(),
+                terms: document.getElementById('cf-terms').value,
+                credit: document.getElementById('cf-credit').value.trim(),
+                active: document.getElementById('cf-active').value === 'true',
+                notes: document.getElementById('cf-notes').value.trim()
+            };
+        }
+
+        // 欄位規則與跨欄位條件
+        function validateCustomer(f) {
+            const errs = {};
+            if (!f.name) errs.name = '客戶名稱為必填，且不可只含空白。';
+            if (!CUSTOMER_TYPES.includes(f.type)) errs.type = '請選擇客戶分類。';
+            if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) errs.email = 'Email 格式不正確（有填才檢查）。';
+            if (!PAYMENT_TERMS.includes(f.terms)) errs.terms = '請選擇付款條件。';
+            if (!/^\d+$/.test(f.credit)) {
+                errs.credit = '信用額度須為非負整數（不可為負數、文字或小數）。';
+            } else if (f.terms === '現結' && Number(f.credit) !== 0) {
+                errs.credit = '現結客戶的信用額度必須為 0。';
+            }
+            if (f.notes.length > 200) errs.notes = '備註最多 200 字。';
+            return errs;
+        }
+
+        function saveCustomer() {
+            const f = readForm();
+            clearFormErrors();
+            showMsg('cf-msg', '', '');
+
+            const errs = validateCustomer(f);
+            if (Object.keys(errs).length) {
+                showFormErrors(errs);
+                showMsg('cf-msg', 'error', '儲存失敗：請修正標示的欄位。已輸入的內容已保留。');
+                return;
+            }
+
+            // 同名僅提示，不直接認定為同一人
+            const dup = customers.find(c => c.name === f.name && c.id !== editingId);
+            if (dup && !confirm(`已有同名客戶「${dup.name}」（${dup.id}）。同名不代表是同一人，仍要儲存嗎？`)) return;
+
+            let savedId;
+            if (editingId) {
+                // 操作層檢查：不信任畫面，依角色與欄位判斷是否允許
+                const c = customers.find(x => x.id === editingId);
+                const restrictedChanged =
+                    c.terms !== f.terms ||
+                    String(c.credit) !== String(Number(f.credit)) ||
+                    c.active !== f.active;
+
+                if (currentRole === 'Staff' && restrictedChanged) {
+                    showMsg('cf-msg', 'error', '權限不足：Staff 不可修改付款條件、信用額度或啟用狀態。本次操作已拒絕，原值保留。');
+                    return;
+                }
+
+                Object.assign(c, { name: f.name, type: f.type, phone: f.phone, email: f.email, notes: f.notes, updated: BASE_DATE });
+                if (currentRole === 'Admin') {
+                    Object.assign(c, { terms: f.terms, credit: Number(f.credit), active: f.active });
+                }
+                savedId = c.id;
+            } else {
+                let terms = f.terms, credit = Number(f.credit), active = f.active;
+                if (currentRole === 'Staff') { terms = '現結'; credit = 0; active = true; }
+                const id = nextCustomerId();
+                customers.push({ id, name: f.name, type: f.type, phone: f.phone, email: f.email, terms, credit, active, notes: f.notes, updated: BASE_DATE });
+                savedId = id;
+            }
+
+            refreshAll();
+            openCustomerList();
+            showMsg('list-msg', 'success', `已儲存客戶 ${savedId}，已返回列表。`);
+        }
+
+        function cancelCustomerForm() {
+            openCustomerList();
+        }
+
+        // ===================== 客戶詳細頁 =====================
+        function openCustomerDetail(id) {
+            viewingId = id;
+            if (!customers.find(c => c.id === id)) { openCustomerList(); return; }
+            switchModule('customer-detail', navCustomers());
+            renderCustomerDetail();
+        }
+
+        function renderCustomerDetail() {
+            const c = customers.find(x => x.id === viewingId);
+            if (!c) { openCustomerList(); return; }
+            const isAdmin = currentRole === 'Admin';
+
+            document.getElementById('cd-name').innerHTML = esc(c.name) + ' ' + statusBadgeCustomer(c.active);
+            document.getElementById('cd-sub').innerText = `客戶編號 ${c.id}｜最後更新 ${c.updated}`;
+
+            let actions = `<button class="btn-secondary" onclick="openCustomerList()">← 返回列表</button>`;
+            actions += `<button class="btn-action" onclick="openCustomerForm('${c.id}')">編輯</button>`;
+            if (isAdmin) {
+                actions += c.active
+                    ? `<button class="btn-danger-outline" onclick="toggleCustomerActive('${c.id}')">停用客戶</button>`
+                    : `<button class="btn-ghost" onclick="toggleCustomerActive('${c.id}')">重新啟用</button>`;
+            }
+            document.getElementById('cd-actions').innerHTML = actions;
+
+            const item = (label, value) => `<div class="detail-item"><label>${label}</label><div>${value}</div></div>`;
+            document.getElementById('cd-master').innerHTML = [
+                item('客戶編號 Customer_ID', esc(c.id)),
+                item('客戶名稱', esc(c.name)),
+                item('客戶分類', esc(c.type)),
+                item('電話', c.phone ? esc(c.phone) : '—'),
+                item('Email', c.email ? esc(c.email) : '—'),
+                item('啟用狀態', c.active ? '啟用' : '停用'),
+                item('付款條件' + (isAdmin ? '' : '<span class="restricted-tag">唯讀</span>'), esc(c.terms)),
+                item('信用額度' + (isAdmin ? '' : '<span class="restricted-tag">唯讀</span>'), fmtMoney(c.credit)),
+                item('備註', c.notes ? esc(c.notes) : '—')
+            ].join('');
+
+            // 依 Customer_ID 查詢訂單；日期新到舊，同日依 Order_ID
+            const orders = ordersData
+                .filter(o => o.customerId === c.id)
+                .sort((a, b) => a.date !== b.date ? (a.date < b.date ? 1 : -1) : (a.id < b.id ? -1 : 1));
+
+            document.getElementById('cd-order-count').innerText = `${orders.length} 筆`;
+            const box = document.getElementById('cd-orders');
+            if (orders.length === 0) {
+                box.innerHTML = '<p style="font-size: 13px; color: var(--text-muted); padding: 16px 0;">此客戶目前沒有訂單紀錄。</p>';
+            } else {
+                box.innerHTML = `
+                    <table class="data-table">
+                        <thead><tr><th>訂單編號</th><th>訂單日期</th><th>金額</th><th>狀態</th><th>明細摘要</th></tr></thead>
+                        <tbody>
+                            ${orders.map(o => `
+                                <tr class="${o.status === '已取消' ? 'row-cancelled' : ''}">
+                                    <td><strong>${esc(o.id)}</strong></td>
+                                    <td>${esc(o.date)}</td>
+                                    <td>${fmtMoney(o.amount)}</td>
+                                    <td>${orderStatusBadge(o.status)}${o.status === '已取消' ? ' <small>（保留紀錄）</small>' : ''}</td>
+                                    <td style="font-size: 12px; color: var(--text-muted);">${esc(o.details)}</td>
+                                </tr>`).join('')}
+                        </tbody>
+                    </table>`;
+            }
+        }
+
+        // 停用／重新啟用：僅 Admin；停用前再次確認編號與名稱；不刪除、不移除訂單
+        function toggleCustomerActive(id) {
+            if (currentRole !== 'Admin') {
+                alert('權限不足：只有 Admin 可以停用或重新啟用客戶。');
+                return;
+            }
+            const c = customers.find(x => x.id === id);
+            if (!c) return;
+            const action = c.active ? '停用' : '重新啟用';
+            const ok = confirm(`請再次確認：\n客戶編號：${c.id}\n客戶名稱：${c.name}\n\n即將${action}此客戶。\n停用不會刪除客戶，也不會移除歷史訂單。`);
+            if (!ok) return;
+            c.active = !c.active;
+            c.updated = BASE_DATE;
+            refreshAll();
+            showMsg('list-msg', 'success', `客戶 ${c.id} 已${action}。`);
+        }
+
+        // ===================== 新增銷售訂單 =====================
+        const PRODUCTS = [
+            { id: 'P001', name: '耶加雪菲 經典特選豆', price: 480 },
+            { id: 'P002', name: '藝妓 珍稀古樹莊園豆', price: 1280 },
+            { id: 'P004', name: '藍山風味 濾掛式咖啡', price: 380 },
+            { id: 'P005', name: '拾光十週年 紀念冷萃濃縮液', price: 580 }
+        ];
+        const ORDER_STATUSES = ['已確認', '備貨中'];
+        let orderLines = [];
+
+        function openOrdersPage() {
+            showMsg('orders-msg', '', '');
+            switchModule('orders', document.querySelectorAll('.nav-item')[3]);
+            renderOrdersTable();
+        }
+
+        function openOrderForm() {
+            const sel = document.getElementById('of-customer');
+            const active = customers
+                .filter(c => c.active)
+                .sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true }));
+            sel.innerHTML = active.length
+                ? '<option value="">請選擇客戶</option>' + active.map(c => `<option value="${esc(c.id)}">${esc(c.id)}｜${esc(c.name)}</option>`).join('')
+                : '<option value="">目前沒有啟用中的客戶</option>';
+
+            document.getElementById('of-date').value = BASE_DATE;
+            document.getElementById('of-status').value = '已確認';
+            orderLines = [{ productId: '', qty: '1' }];
+            clearOrderErrors();
+            showMsg('of-msg', '', '');
+            renderOrderLines();
+            switchModule('order-form', document.querySelectorAll('.nav-item')[3]);
+        }
+
+        function clearOrderErrors() {
+            ['of-err-customer', 'of-err-date', 'of-err-lines'].forEach(id => {
+                const e = document.getElementById(id);
+                e.innerText = ''; e.classList.remove('show');
+            });
+            document.getElementById('of-customer').classList.remove('invalid');
+            document.getElementById('of-date').classList.remove('invalid');
+        }
+
+        function renderOrderLines() {
+            const tbody = document.getElementById('of-lines');
+            tbody.innerHTML = orderLines.map((l, i) => `
+                <tr>
+                    <td>
+                        <select onchange="setOrderLine(${i}, 'productId', this.value)" style="padding: 7px 10px; border: 1px solid var(--border-color); border-radius: 6px; min-width: 240px; font-size: 13px;">
+                            <option value="">請選擇商品</option>
+                            ${PRODUCTS.map(p => `<option value="${p.id}" ${p.id === l.productId ? 'selected' : ''}>${p.id}｜${esc(p.name)}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td id="ln-price-${i}">—</td>
+                    <td><input type="text" inputmode="numeric" value="${esc(l.qty)}" oninput="setOrderLine(${i}, 'qty', this.value)" style="width: 90px; padding: 7px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px;"></td>
+                    <td id="ln-sub-${i}">—</td>
+                    <td><button class="btn-danger-outline" onclick="removeOrderLine(${i})">移除</button></td>
+                </tr>`).join('');
+            refreshOrderTotals();
+        }
+
+        function setOrderLine(i, key, val) {
+            orderLines[i][key] = val;
+            refreshOrderTotals();
+        }
+
+        function addOrderLine() {
+            orderLines.push({ productId: '', qty: '1' });
+            renderOrderLines();
+        }
+
+        function removeOrderLine(i) {
+            orderLines.splice(i, 1);
+            renderOrderLines();
+        }
+
+        function parseQty(s) {
+            const t = String(s).trim();
+            return /^\d+$/.test(t) && Number(t) > 0 ? Number(t) : null;
+        }
+
+        function refreshOrderTotals() {
+            let total = 0;
+            orderLines.forEach((l, i) => {
+                const p = PRODUCTS.find(x => x.id === l.productId);
+                const q = parseQty(l.qty);
+                const sub = (p && q) ? p.price * q : 0;
+                total += sub;
+                const pe = document.getElementById('ln-price-' + i);
+                const se = document.getElementById('ln-sub-' + i);
+                if (pe) pe.innerText = p ? fmtMoney(p.price) : '—';
+                if (se) se.innerText = sub ? fmtMoney(sub) : '—';
+            });
+            document.getElementById('of-total').innerText = fmtMoney(total);
+        }
+
+        // 訂單編號：SO + 日期 + 當日流水號，並再次檢查唯一
+        function nextOrderId(date) {
+            const prefix = 'SO' + date.replace(/-/g, '');
+            let n = ordersData.filter(o => o.id.startsWith(prefix + '-')).length + 1;
+            let id;
+            do {
+                id = prefix + '-' + String(n).padStart(2, '0');
+                n++;
+            } while (ordersData.some(o => o.id === id));
+            return id;
+        }
+
+        function saveOrder() {
+            clearOrderErrors();
+            showMsg('of-msg', '', '');
+            const msgs = [];
+
+            // 客戶必須存在且為啟用中（講義：新交易排除停用客戶）
+            const custId = document.getElementById('of-customer').value;
+            const cust = customers.find(c => c.id === custId);
+            if (!cust || !cust.active) {
+                msgs.push('請選擇啟用中的客戶；停用客戶不可建立新交易。');
+                const e = document.getElementById('of-err-customer');
+                e.innerText = '請選擇啟用中的客戶。'; e.classList.add('show');
+                document.getElementById('of-customer').classList.add('invalid');
+            }
+
+            // 訂單日期
+            const date = document.getElementById('of-date').value;
+            const validDate = /^\d{4}-\d{2}-\d{2}$/.test(date) && !isNaN(new Date(date).getTime());
+            if (!validDate) {
+                msgs.push('請輸入有效的訂單日期。');
+                const e = document.getElementById('of-err-date');
+                e.innerText = '請輸入有效日期。'; e.classList.add('show');
+                document.getElementById('of-date').classList.add('invalid');
+            }
+
+            // 訂單狀態
+            const status = document.getElementById('of-status').value;
+            if (!ORDER_STATUSES.includes(status)) msgs.push('訂單狀態不正確。');
+
+            // 明細：至少一列、商品必選、數量為正整數、商品不可重複
+            if (orderLines.length === 0) {
+                msgs.push('至少需要一筆訂單明細。');
+            }
+            const seen = new Set();
+            const lines = [];
+            orderLines.forEach((l, i) => {
+                const p = PRODUCTS.find(x => x.id === l.productId);
+                const q = parseQty(l.qty);
+                if (!p) {
+                    msgs.push(`第 ${i + 1} 列：請選擇商品。`);
+                } else if (seen.has(p.id)) {
+                    msgs.push(`第 ${i + 1} 列：商品 ${p.id} 重複，請合併為同一列。`);
+                }
+                if (!q) msgs.push(`第 ${i + 1} 列：數量須為正整數。`);
+                if (p && q && !seen.has(p.id)) {
+                    seen.add(p.id);
+                    lines.push({ product: p, qty: q });
+                }
+            });
+
+            if (msgs.length) {
+                showMsg('of-msg', 'error', '建立失敗，請修正以下項目（已輸入內容已保留）：\n' + msgs.join('\n'));
+                return;
+            }
+
+            const amount = lines.reduce((s, l) => s + l.product.price * l.qty, 0);
+            const id = nextOrderId(date);
+            ordersData.push({
+                id,
+                customerId: cust.id,
+                date,
+                amount,
+                status,
+                details: lines.map(l => `${l.product.id}×${l.qty}`).join(', ')
+            });
+
+            refreshAll();
+            openOrdersPage();
+            showMsg('orders-msg', 'success', `已建立訂單 ${id}（${cust.name}，${fmtMoney(amount)}）。`);
+        }
+
+        // ===================== 首頁與全域刷新 =====================
+        function updateKPIs() {
+            document.getElementById('kpi-customers').innerText = customers.length + ' 位';
+            document.getElementById('summary-customers').innerText = customers.length + ' 位客戶';
+            const todayValidOrders = ordersData.filter(o => o.date === BASE_DATE && o.status !== '已取消');
+            document.getElementById('kpi-orders-count').innerText = todayValidOrders.length + ' 筆';
+            const todayAmount = todayValidOrders.reduce((sum, o) => sum + o.amount, 0);
+            document.getElementById('kpi-orders-amount').innerText = fmtMoney(todayAmount);
+            const pendingShipping = ordersData.filter(o => o.status === '已確認' || o.status === '備貨中');
+            document.getElementById('kpi-pending-shipping').innerText = pendingShipping.length + ' 筆';
+            document.getElementById('nav-customers-label').innerText = '客戶管理 (' + customers.length + ')';
+            document.getElementById('nav-orders-label').innerText = '銷售訂單 (' + ordersData.length + ')';
+        }
+
+        function renderOrdersTable() {
+            const tbody = document.getElementById('orders-table-body');
+            tbody.innerHTML = '';
+            ordersData.forEach(order => {
+                let actionBtn = '-';
+                if (order.id === 'SO20261013-02') {
+                    actionBtn = order.status === '已取消'
+                        ? `<button class="btn-action" onclick="toggleSO002('已確認')">改回已確認</button>`
+                        : `<button class="btn-danger-outline" onclick="toggleSO002('已取消')">設為已取消</button>`;
+                }
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${esc(order.id)}</strong></td>
+                    <td>${esc(customerNameOf(order.customerId))} <small style="color: var(--text-muted);">(${esc(order.customerId)})</small></td>
+                    <td>${esc(order.date)}</td>
+                    <td>${fmtMoney(order.amount)}</td>
+                    <td>${orderStatusBadge(order.status)}</td>
+                    <td style="font-size: 12px; color: var(--text-muted);">${esc(order.details)}</td>
+                    <td>${actionBtn}</td>`;
+                tbody.appendChild(tr);
+            });
+            updateKPIs();
+        }
+
+        function toggleSO002(newStatus) {
+            const order = ordersData.find(o => o.id === 'SO20261013-02');
+            if (order) {
+                order.status = newStatus;
+                renderOrdersTable();
+                if (document.getElementById('module-customer-detail').classList.contains('active')) renderCustomerDetail();
+            }
+        }
+
+        function refreshAll() {
+            renderCustomerList();
+            renderOrdersTable();
+            if (document.getElementById('module-customer-detail').classList.contains('active')) renderCustomerDetail();
+        }
+
+        // ===================== 角色與頁面切換 =====================
+        function setRole(role) {
+            currentRole = role;
+            document.getElementById('role-admin-btn').classList.toggle('active', role === 'Admin');
+            document.getElementById('role-staff-btn').classList.toggle('active', role === 'Staff');
+
+            if (role === 'Admin') {
+                document.getElementById('user-avatar-text').innerText = 'A';
+                document.getElementById('user-name-text').innerText = '系統管理者';
+                document.getElementById('user-role-label').innerText = '角色：Admin';
+            } else {
+                document.getElementById('user-avatar-text').innerText = 'S';
+                document.getElementById('user-name-text').innerText = '陳專員 (門市/客服)';
+                document.getElementById('user-role-label').innerText = '角色：Staff';
+            }
+
+            const staff = role === 'Staff';
+            document.querySelectorAll('.financial-data').forEach(el => el.style.display = staff ? 'none' : 'block');
+            document.querySelectorAll('.restricted-overlay').forEach(el => el.style.display = staff ? 'block' : 'none');
+
+            applyFormPermissions();
+            refreshAll();
+        }
+
+        function switchModule(moduleId, element) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            if (element) element.classList.add('active');
+
+            document.querySelectorAll('.module-page').forEach(page => page.classList.remove('active'));
+            const targetPage = document.getElementById('module-' + moduleId);
+            if (targetPage) targetPage.classList.add('active');
+
+            const titles = {
+                'dashboard': '首頁儀表板',
+                'customers': '客戶管理 (Customer)',
+                'customer-form': (editingId ? '編輯客戶' : '新增客戶'),
+                'customer-detail': '客戶詳細頁',
+                'products': '商品目錄 (Product)',
+                'orders': '銷售訂單 (Sales Order)',
+                'order-form': '新增銷售訂單',
+                'inventory': '庫存與保留 (Inventory)',
+                'shipping': '出貨配送 (預計第11週完成)',
+                'tests': '八項驗收測試面板',
+                'permissions': '角色權限矩陣'
+            };
+            document.getElementById('page-title-text').innerText = titles[moduleId] || 'ERP 系統';
+        }
+
+        window.onload = function () {
+            setRole('Admin');
+            renderCustomerList();
+            renderOrdersTable();
+        };
+    </script>
+</body>
+</html>
